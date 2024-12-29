@@ -49,8 +49,29 @@ class PositionalEncoding(nn.Module):
         # register the positional encoding as a buffer
         self.register_buffer("pe", pe)
 
+    # add the positional encoding to every word in
+    # the sentence
     def forward(self, x):
+        # since the positional encoding is fixed,
+        # we set learn_grad as false
         x = x + (self.pe[:, : x.shape[1], :]).requires_grad_(
             False
         )  # (batch, seq_len, d_model)
         return self.dropout(x)
+
+
+# Layer Normalization model
+class LayerNormalization(nn.Module):
+    def __init__(self, eps: float = 10**-6):
+        super().__init__()
+        self.eps = eps
+        # we need eps as if sigma -> 0 , then we dont want very big numbers
+        # or very small numbers and to make this numerically stable.
+        self.alpha = nn.Parameter(torch.ones(1))  # multiplied
+        self.bias = nn.Parameter(torch.zeros(1))  # added
+
+    def forward(self, x):
+        mean = x.mean(dim=-1, keepdim=True)
+        std = x.std(dim=-1, keepdim=True)
+        return self.alpha * (x - mean) / (std + self.eps) + self.bias
+        
