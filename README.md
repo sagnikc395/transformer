@@ -9,11 +9,12 @@ after reading Attention is All You Need paper.
 .
 ├── README.md
 ├── requirements.txt
+├── ruff.toml
 └── src
-└── model.py
-
-
-2 directories, 3 files
+    └── model.py
 ```
 
-- src/model.py has our transformer model.
+- src/model.py 
+  has our transformer model.
+- ruff.toml 
+  has out python config
