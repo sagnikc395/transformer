@@ -74,4 +74,20 @@ class LayerNormalization(nn.Module):
         mean = x.mean(dim=-1, keepdim=True)
         std = x.std(dim=-1, keepdim=True)
         return self.alpha * (x - mean) / (std + self.eps) + self.bias
-        
+
+
+# feed forward model
+# fully connected layer that the model uses for both encoder and decoder
+class FeedForwardBlock(nn.Module):
+    def __init__(self, d_model: int, d_ff: int, dropout: float):
+        super().__init__()
+        self.linear_l = nn.Linear(d_model, d_ff)  # W1 and B1
+        self.dropout = nn.Dropout(dropout)
+        self.linear_l = nn.Linear(d_ff, d_model)  # W2 and B2
+
+    def forward(self, x):
+        # (Batch,seq_len,d_model) --> (via linear_l) -> (Batch,seq_len,d_ff) -> (relu)
+        # -> (batch,seq_len,d_model)
+        return self.linear_l(self.dropout(torch.relu(self.linear_l(x))))
+
+    
