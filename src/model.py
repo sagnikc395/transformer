@@ -238,3 +238,52 @@ class Encoder(nn.Module):
         for layer in self.layers:
             x = layer(x, mask)
         return self.norm(x)
+
+
+## decoder block
+class DecoderBlock(nn.Module):
+    def __init__(
+        self,
+        self_attention_block: MultiHeadAttentionBlock,
+        cross_attention_block: MultiHeadAttentionBlock,
+        feed_forward_block: FeedForwardBlock,
+        dropout: float,
+    ):
+        super().__init__()
+        self.self_attention_block = self_attention_block
+        self.cross_attention_block = cross_attention_block
+        self.feed_forward_block = feed_forward_block
+        self.residual_connection = nn.Module(
+            [ResidualConnection(dropout) for _ in range(3)]
+        )
+
+    def forward(self, x, encoder_output, src_mask, target_mask):
+        # src_mask is the mask coming from the encoder -> source language
+        # target_mask is the mask coming from the decoder -> target language
+        x = self.residual_connection[0](
+            x, lambda x: self.self_attention_block(x, x, x, target_mask)
+        )
+        x = self.residual_connection[1](
+            x,
+            lambda x: self.cross_attention_block(
+                x, encoder_output, encoder_output, src_mask
+            ),
+        )
+        x = self.residual_connection[2](x, self.feed_forward_block)
+        return x
+
+
+## decoder is just simply n times the block of the previous
+class Decoder(nn.Module):
+    def __init_(self, layers: nn.ModuleList):
+        super().__init__()
+        self.layers = layers
+        self.norm = LayerNormalization()
+
+    def forward(self, x, encoder_output, src_mask, target_mask):
+        for layer in self.layers:
+            # each of them is a decoderblock, passing the args
+            x = layer(x, encoder_output, src_mask, target_mask)
+            return self.norm(x)
+        
+
