@@ -224,3 +224,17 @@ class EncoderBlock(nn.Module):
         )
         return x
 
+
+class Encoder(nn.Module):
+    # encoder block are like connection of encoders
+    # an encoder is a layer of encoder blocks and acc
+    # to the paper we can have n of them
+    def __init__(self, layers: nn.ModuleList):
+        super().__init__()
+        self.layers = layers
+        self.norm = LayerNormalization()
+
+    def forward(self, x, mask):
+        for layer in self.layers:
+            x = layer(x, mask)
+        return self.norm(x)
