@@ -285,5 +285,19 @@ class Decoder(nn.Module):
             # each of them is a decoderblock, passing the args
             x = layer(x, encoder_output, src_mask, target_mask)
             return self.norm(x)
-        
 
+
+# the last layer is the linear layer
+# here we have to map this back to the vocabulary of the output layer
+# projection layer -> projecting the embedding into the vocabulary
+
+
+class ProjectionLayer(nn.Module):
+    def __init__(self, d_model: int, vocab_size: int):
+        super().__init__()
+        self.proj = nn.Linear(d_model, vocab_size)
+
+    def forward(self, x):
+        # (batch,seq_len,d_model) -> (batch,seq_len,vocab_size)
+        # applying the logsoftmax for numerical stability
+        return torch.log_softmax(self.proj(x), dim=-1)
