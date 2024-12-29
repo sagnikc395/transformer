@@ -301,3 +301,29 @@ class ProjectionLayer(nn.Module):
         # (batch,seq_len,d_model) -> (batch,seq_len,vocab_size)
         # applying the logsoftmax for numerical stability
         return torch.log_softmax(self.proj(x), dim=-1)
+
+
+## Transformer
+
+class Transformer(nn.Module):
+    def __init__(
+        self,
+        encoder: Encoder,
+        decoder: Decoder,
+        src_embed: InputEmbeddings,
+        target_embed: InputEmbeddings,
+        src_posn: PositionalEncoding,
+        target_posn: PositionalEncoding,
+        projection_layer: ProjectionLayer,
+    ):
+        super().__init__()
+        self.encoder = encoder
+        self.decoder = decoder
+        self.src_embed = src_embed
+        self.target_embed = target_embed
+        self.src_posn = src_posn
+        self.target_posn = target_posn
+        self.projection_layer = projection_layer
+
+    def encoder(self,src_mask):
+        
