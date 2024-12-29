@@ -11,8 +11,9 @@ after reading Attention is All You Need paper.
 ├── requirements.txt
 └── src
 └── model.py
-```
+
 
 2 directories, 3 files
+```
 
 - src/model.py has our transformer model.
