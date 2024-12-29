@@ -5,11 +5,13 @@ after reading Attention is All You Need paper.
 
 ### Structure:
 
+```
 .
 ├── README.md
 ├── requirements.txt
 └── src
 └── model.py
+```
 
 2 directories, 3 files
 
