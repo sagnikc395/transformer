@@ -304,7 +304,6 @@ class ProjectionLayer(nn.Module):
 
 
 ## Transformer
-
 class Transformer(nn.Module):
     def __init__(
         self,
@@ -325,5 +324,72 @@ class Transformer(nn.Module):
         self.target_posn = target_posn
         self.projection_layer = projection_layer
 
-    def encoder(self,src_mask):
-        
+    def encoder(self, src, src_mask):
+        src = self.src_embed(src)
+        src = self.src_posn(src)
+        return self.encoder(src, src_mask)
+
+    def decode(self, encoder_output, src_mask, tgt, tgt_mask):
+        # add target encoding to it
+        tgt = self.target_embed(tgt)
+        # add the positional encoding to the target sentence
+        tgt = self.target_posn(tgt)
+        # encode
+        return self.decoder(tgt, encoder_output, src_mask, tgt_mask)
+
+    # project method
+    def project(self, x):
+        return self.projection_layer(x)
+
+
+# given all the hyperparameters , will build the transformer for us
+# n-> no of encoder layers
+# h -> no of heads
+def build_transformer(
+    src_vocab_size: int,
+    tgt_vocab_size: int,
+    src_seq_len: int,
+    tgt_seq_len: int,
+    d_model: int = 512,
+    n=6,
+    h=8,
+    dropout=0.1,
+    d_ff=2048,
+) -> Transformer:
+    src_embed = InputEmbeddings(d_model, src_vocab_size)
+    tgt_embed = InputEmbeddings(d_model, tgt_vocab_size)
+
+    # create the positional encoding layers
+    src_pos = PositionalEncoding(d_model, src_seq_len, dropout)
+    tgt_pos = PositionalEncoding(d_model, tgt_seq_len, dropout)
+
+    ## create the encoder block
+    encoder_blocks = []
+    for _ in range(n):
+        encoder_self_attention_block = MultiHeadAttentionBlock(
+            d_model, h, dropout
+        )
+        feed_forward_block = FeedForwardBlock(d_model, d_ff, dropout)
+        encoder_block = EncoderBlock(
+            encoder_self_attention_block, feed_forward_block, dropout
+        )
+        # add this encoder block to the list
+        encoder_blocks.append(encoder_block)
+
+    # create the decoder blocks
+    decoder_blocks = []
+    for _ in range(n):
+        decoder_self_attention_block = MultiHeadAttentionBlock(
+            d_model, h, dropout
+        )
+        decoder_cross_attention_block = MultiHeadAttentionBlock(
+            d_model, h, dropout
+        )
+        feed_forward_block = FeedForwardBlock(d_model, d_ff, dropout)
+        decoder_block = DecoderBlock(
+            decoder_self_attention_block,
+            decoder_cross_attention_block,
+            feed_forward_block,
+            dropout,
+        )
+        decoder_blocks.append(decoder_block)
