@@ -253,7 +253,7 @@ class DecoderBlock(nn.Module):
         self.self_attention_block = self_attention_block
         self.cross_attention_block = cross_attention_block
         self.feed_forward_block = feed_forward_block
-        self.residual_connection = nn.Module(
+        self.residual_connection = nn.ModuleList(
             [ResidualConnection(dropout) for _ in range(3)]
         )
 
@@ -393,3 +393,29 @@ def build_transformer(
             dropout,
         )
         decoder_blocks.append(decoder_block)
+
+    # create the encoder and the decoder
+    encoder = Encoder(nn.ModuleList(encoder_blocks))
+    decoder = Decoder(nn.ModuleList(decoder_blocks))
+
+    # create the projection layer
+    projection_layer = ProjectionLayer(d_model, tgt_vocab_size)
+
+    # create the transformer
+    transformer = Transformer(
+        encoder,
+        decoder,
+        src_embed,
+        tgt_embed,
+        src_pos,
+        tgt_pos,
+        projection_layer,
+    )
+
+    # initialize the parameters
+    for p in transformer.parameters():
+        if p.dim() > 1:
+            nn.init.xavier_normal_(p)
+
+    return transformer
+
