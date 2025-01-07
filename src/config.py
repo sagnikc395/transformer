@@ -8,6 +8,8 @@ def get_config():
         "lr": 10**-4,
         "lang_src": "en",
         "lang_tgt": "it",
+        "seq_len": 350,
+        "d_model": 512,
         "model_folder": "weights",
         "model_filename": "tmodel_",
         "preload": None,

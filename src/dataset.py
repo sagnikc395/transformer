@@ -16,14 +16,14 @@ class BillingualDataset(Dataset):
         self.seq_len = seq_len
 
         # convert the start of sentence token to a number
-        self.sos_token = torch.Tensor(
+        self.sos_token = torch.tensor(
             [tokenizer_src.token_to_id(["[SOS]"])], dtype=torch.int64
         )
-        self.eos_token = torch.Tensor(
+        self.eos_token = torch.tensor(
             [tokenizer_src.token_to_id(["[EOS]"])], dtype=torch.int64
         )
 
-        self.pad_token = torch.Tensor(
+        self.pad_token = torch.tensor(
             [tokenizer_src.token_to_id(["[PAD]"])], dtype=torch.int64
         )
 
