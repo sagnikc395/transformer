@@ -75,4 +75,45 @@ class BillingualDataset(Dataset):
             ]
         )
 
-        
+        # add EOs to the label (what we expect as output from the decoder)
+        label = torch.cat(
+            [
+                torch.tensor(dec_input_tokens, dtype=torch.int64),
+                self.pos_token,
+                torch.tensor(
+                    self.pos_token * dec_num_padding_tokens, dtype=torch.int64
+                ),
+            ]
+        )
+
+        # check if the size of encoder_input is equal to that of the seq_len
+        assert encoder_input.size(0) == self.seq_len
+        assert decoder_input.size(0) == self.seq_len
+        assert label.size(0) == self.seq_len
+
+        return {
+            "encoder_input": encoder_input,
+            # seq_len
+            "decoder_input": decoder_input,
+            # all the tokens that are not padding are ok
+            "encoder_mask": (encoder_input != self.pad_token(0))
+            .unsqueeze(0)
+            .int(),  # (1,1,seq_len)
+            "decoder_mask": (decoder_input != self.pad_token)
+            .unsqueeze(0)
+            .int()
+            and causal_mask(
+                decoder_input.size(0)
+            ),  # (1,seq_len) and (1,seq_len,seq_len)
+            # each word can only look at previous word and non-padding word (i.e dont want padding word to participiate in this )
+            # causal mask
+            "label": label,  # seq_len
+            "src_text": src_text,
+            "tgt_text": tgt_text,
+        }
+
+
+def causal_mask(size):
+    # return all the values above the diagonal
+    mask = torch.triu(torch.ones(1, size, size), diagonal=1).type(int)
+    return mask == 0
