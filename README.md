@@ -6,20 +6,30 @@ after reading Attention is All You Need paper.
 ### Structure:
 
 ```
-.
+./
 ├── README.md
 ├── requirements.txt
 ├── ruff.toml
 └── src
+    ├── config.py
+    ├── dataset.py
     ├── model.py
     └── train.py
 
-2 directories, 5 files
+2 directories, 7 files
 ```
 
-- src/model.py 
-  has our transformer model.
-- src/train.py 
-  has out training model with tokenizing the dataset.
-- ruff.toml 
-  has out python config
+### Contents:
+
+- README.md
+  this file (duh!)
+- src/model.py
+  > has the basic structure of our transformer model.
+- src/train.py
+  > has utiltiies for getting the data from huggingface, building out the tokenizer , getting all sentences and building the vocabulary and then training the model on top our architecture.
+- src/config.py
+  > has our config for the dataset like source lang, target lang, epoch size,learning rate, where to store the files etc.
+- src/dataset.py
+  > builds on top of the dataset and adds out SOS and EOS tokens and the padding tokens ,also adds [causal mask](#)
+- ./ruff.toml
+  > python formatting rules for this project.
