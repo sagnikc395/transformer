@@ -5,11 +5,17 @@ from torch.utils.data import Dataset, DataLoader, random_split
 from dataset import BillingualDataset, causal_mask
 from model import build_transformer
 
+from tqdm import tqdm
+
 from datasets import load_dataset
 from tokenizers import Tokenizer
 from tokenizers.models import WordLevel
 from tokenizers.trainers import WordLevelTrainer
 from tokenizers.pre_tokenizers import Whitespace
+
+from torch.utils.tensorboard import SummaryWriter
+from config import get_weights_file_path
+
 
 from pathlib import Path
 
@@ -114,3 +120,55 @@ def get_model(config, vocab_src_len, vocab_tgt_len):
         config["d_model"],
     )
     return model
+
+
+def train_model(config):
+    # device on which we put all the tensors
+    # ie check if cuda present
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using {device}")
+
+    Path(config["model_folder"]).mkdir(parents=True, exist_ok=True)
+
+    (
+        train_dataloader,
+        val_dataloader,
+        tokenizer_src,
+        tokenizer_tgt,
+    ) = get_dataset(config)
+
+    model = get_model(
+        tokenizer_src.get_vocab_size(),
+        tokenizer_tgt.get_vocab_size(),
+    ).to(device)
+    # tensorboard allows to visualize the chart repr of loss
+    writer = SummaryWriter(config["experiment_name"])
+
+    # using adam as an optimizer
+    optimizer = torch.optim.Adam(model.parameters(), lr=config("lr"), eps=1e-9)
+
+    # resume the training if crashes
+    initial_epoch = 0
+    global_step = 0
+
+    if config["preload"]:
+        model_filename = get_weights_file_path(config, config["preload"])
+        print(f"Preloading model {model_filename}")
+        state = torch.load(model_filename)
+        initial_epoch = state["epoch"] + 1
+        optimizer.load_state_dict(state["optimizer_state_dict"])
+        global_step = state["global_step"]
+
+    # using cross entropy loss
+    # label_smoothing so as to distribute bias and improve accuracy
+    # of the model
+    loss_fn = nn.CrossEntropyLoss(
+        ignore_index=tokenizer_src.token_to_id("[PAD]"), label_smoothing=0.1
+    ).to(device)
+
+    # training loop
+    for epoch in range(initial_epoch, config["num_epochs"]):
+        model.train()
+        batch_iterator = tqdm(
+            train_dataloader, desc=f"Processing epoch {epoch:02d}"
+        )
