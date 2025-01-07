@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch.utils.data import Dataset, DataLoader, random_split
 
 from datasets import load_dataset
 from tokenizers import Tokenizer
@@ -40,3 +41,21 @@ def get_all_sentences(ds, lang):
         yield item["translation"][lang]
 
 
+def get_dataset(config):
+    ds_raw = load_dataset(
+        "opus_books",
+        f"{config["lang_src"]}-{config["lang_tgt"]}",
+        split="train",
+    )
+
+    # build the tokenizer
+    tokenizer_src = get_or_build_tokenizer(config, ds_raw, config=["lang_src"])
+    tokenizer_tgt = get_or_build_tokenizer(config, ds_raw, config["lang_tgt"])
+
+    # 90% for training and 10% for validation
+    train_ds_size = int(0.9 * len(ds_raw))
+    val_ds_size = len(ds_raw) - train_ds_size
+    train_ds_raw, val_ds_raw = torch.random_split(
+        ds_raw, [train_ds_size, val_ds_size]
+    )
+    
