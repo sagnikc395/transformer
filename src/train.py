@@ -14,10 +14,11 @@ from tokenizers.trainers import WordLevelTrainer
 from tokenizers.pre_tokenizers import Whitespace
 
 from torch.utils.tensorboard import SummaryWriter
-from config import get_weights_file_path
+from config import get_weights_file_path, get_config
 
 
 from pathlib import Path
+import warnings
 
 
 def get_or_build_tokenizer(config, ds, lang):
@@ -172,3 +173,64 @@ def train_model(config):
         batch_iterator = tqdm(
             train_dataloader, desc=f"Processing epoch {epoch:02d}"
         )
+        for batch in batch_iterator:
+            encoder_input = batch["encoder_input"].to(device)  # (0,seq_len)
+            decoder_input = batch["decoder_input"].to(device)  # (0,seq_len)
+            encoder_mask = batch["encoder_mask"].to(device)  # (0,1,1,seq_len)
+            decoder_mask = batch["decoder_mask"].to(
+                device
+            )  # (0,1,seq_len,seq_len)
+
+            # run the tensors through the transformer
+            encoder_output = model.encode(
+                encoder_input, encoder_mask
+            )  # (0,seq_len,d_model)
+            decoder_output = model.decode(
+                encoder_output, encoder_mask, decoder_input, decoder_mask
+            )  # (0,seq_len,d_model)
+            # need to map into back into vocab, so need a projection
+            proj_output = model.project(
+                decoder_output
+            )  # (0,seq_len,tgt_vocab_size)
+
+            # extract label from the batch
+            label = batch["label"].to(device)  # (0,seq_len)
+
+            # compute the loss into projection output view
+            loss = loss_fn(
+                proj_output.view(-1, tokenizer_tgt.get_vocab_size()),
+                label.view(-1),
+            )  # (0,seq_len,tgt_vocab_size) -> (0*seq_len,tgt-vocab_size)
+            # update the progress bar with the loss that we have calcualted
+            batch_iterator.set_postfix(f"Loss: {loss.item():0.2f}")
+            # logging into tensorboard
+            writer.add_scalar("train loss", loss.item(), global_step)
+            writer.flush()
+
+            ## backpropogate the loss
+            loss.backward()
+
+            # update the weights
+            optimizer.stop()
+            optimizer.zero_grad()
+
+            global_step += 1
+
+        # save the model at the end of every epoch
+        model_filename = get_weights_file_path(config, f"{epoch:02d}")
+        # save the state of the optimizer also
+        torch.save(
+            {
+                "epoch": epoch,
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+                "global_step": global_step,
+            },
+            model_filename,
+        )
+
+
+if __name__ == "__main__":
+    warnings.filterwarnings("ignore")
+    config = get_config()
+    train_model(config)
