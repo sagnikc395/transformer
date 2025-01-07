@@ -1,7 +1,7 @@
 ## transformer
 
 My implementation of the transformer architecture,
-after reading Attention is All You Need paper.
+after reading [Attention is All You Need](https://arxiv.org/abs/1706.03762) paper.
 
 ### Structure:
 
@@ -22,7 +22,7 @@ after reading Attention is All You Need paper.
 ### Contents:
 
 - README.md
-  this file (duh!)
+  > this file (duh!)
 - src/model.py
   > has the basic structure of our transformer model.
 - src/train.py
@@ -30,6 +30,6 @@ after reading Attention is All You Need paper.
 - src/config.py
   > has our config for the dataset like source lang, target lang, epoch size,learning rate, where to store the files etc.
 - src/dataset.py
-  > builds on top of the dataset and adds out SOS and EOS tokens and the padding tokens ,also adds [causal mask](#)
+  > builds on top of the dataset and adds out SOS and EOS tokens and the padding tokens ,also adds [causal mask](https://ai.stackexchange.com/questions/42116/transformer-decoder-causal-masking-during-inference)
 - ./ruff.toml
   > python formatting rules for this project.
